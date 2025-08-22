@@ -21,7 +21,7 @@
     min-height:100vh;
   }
   .container{max-width:980px;margin:0 auto;}
-  header{display:flex;align-items:center;gap:16px;margin-bottom:20px;justify-content:space-between;}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
   h1{margin:0;font-size:20px;}
   .card{
     background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
@@ -38,13 +38,13 @@
   select{background-color:black;color:white;}
   button{
     background:linear-gradient(90deg,var(--accent),#60a5fa);
-    color:#042028;padding:6px 10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;
+    color:#042028;padding:9px 12px;border:none;border-radius:10px;font-weight:600;cursor:pointer;
   }
   .muted{color:var(--muted);font-size:13px}
+  ul{padding-left:18px;margin:8px 0}
   .results{margin-top:12px}
   .small{font-size:13px}
-  .recipe-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
-  .recipe-text{flex:1}
+  .recipe-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;justify-content:space-between;}
   .chip{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;font-size:13px}
   .raw-list{display:flex;flex-direction:column;gap:6px}
   .footer{margin-top:14px;color:var(--muted);font-size:13px}
@@ -52,24 +52,20 @@
   .rightpanel{display:flex;flex-direction:column;gap:12px}
   .textarea{min-height:120px;resize:vertical}
   .code{background:rgba(255,255,255,0.02);padding:8px;border-radius:6px;font-family:monospace;font-size:13px;white-space:pre-wrap}
-  .github-btn img{width:28px;height:28px;filter:invert(1);}
+  .github-btn img{width:28px;height:28px;}
   .github-btn:hover img{transform:scale(1.1);transition:0.2s;}
   @media (max-width:900px){ .grid{grid-template-columns:1fr; } }
+  .delete-btn{background:#ef4444;color:white;padding:4px 8px;border:none;border-radius:6px;cursor:pointer;font-size:12px;}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <div style="display:flex;align-items:center;gap:16px;">
-      <div class="card" style="display:inline-block;padding:10px 12px;">🚀</div>
-      <div>
-        <h1>Crafting Raw Material Calculator</h1>
-        <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
-      </div>
+    <div class="card" style="display:inline-block;padding:10px 12px;">🚀</div>
+    <div>
+      <h1>Crafting Raw Material Calculator</h1>
+      <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
     </div>
-    <a class="github-btn" href="https://github.com/RedClaws1800/MinecraftTools" target="_blank">
-      <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/github.svg" alt="GitHub">
-    </a>
   </header>
 
   <div class="grid">
@@ -91,6 +87,45 @@
       </div>
 
       <div class="results" id="resultsArea"></div>
+
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0">
+
+      <!-- Custom recipe inputs -->
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-top:0">Add / Update / Delete Custom Recipe</h3>
+        <div class="muted small" style="margin-bottom:8px">
+          Enter Name, Yield, and Ingredients separately.<br>
+          <strong>Ingredients format:</strong> amount followed by item name, separated by commas.<br>
+          Example: <span class="chip">2 Oak Plank</span>, <span class="chip">1 Stick</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <label for="customName">Item Name</label>
+            <input id="customName" type="text" placeholder="Enter item name" />
+          </div>
+
+          <div>
+            <label for="customYield">Yield</label>
+            <input id="customYield" type="number" min="1" value="1" placeholder="Enter how many this recipe produces" />
+          </div>
+
+          <div>
+            <label for="customIngredients">Ingredients</label>
+            <input id="customIngredients" type="text" placeholder="e.g. 2 Oak Plank, 1 Stick" />
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button id="addCustom">Add / Update Recipe</button>
+            <button id="deleteCustom">Delete Recipe</button>
+            <button id="useExample">Load Example Recipes</button>
+            <button id="exportBtn">Export recipes</button>
+            <button id="importBtn">Import JSON</button>
+          </div>
+
+          <textarea id="importArea" class="textarea" placeholder="Paste exported JSON here to import" style="margin-top:8px;display:none"></textarea>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT PANEL -->
@@ -98,6 +133,7 @@
       <div class="card">
         <h3 style="margin-top:0">Raw Materials Needed</h3>
         <div id="rawList" class="raw-list muted">No calculation yet.</div>
+        <div style="margin-top:10px" class="muted">Any ingredient without a recipe is treated as <strong>raw</strong>.</div>
       </div>
 
       <div class="card">
@@ -110,22 +146,22 @@
 
 <script>
 const presetRecipes = {
-  "Oak Plank": { yield:4, ingredients:[{name:"Oak Log", amount:1}] },
-  "Stick": { yield:4, ingredients:[{name:"Oak Plank", amount:2}]},
-  "Crafting Table": { yield:1, ingredients:[{name:"Oak Plank", amount:4}]},
-  "Chest": { yield:1, ingredients:[{name:"Oak Plank", amount:8}]},
-  "Glass": { yield:1, ingredients:[{name:"Sand", amount:1}]},
-  "Glass Pane": { yield:16, ingredients:[{name:"Glass", amount:6}]},
-  "Stone": { yield:1, ingredients:[{name:"Cobblestone", amount:1}]},
-  "Stone Bricks": { yield:4, ingredients:[{name:"Stone", amount:4}]},
-  "Torch": { yield:4, ingredients:[{name:"Coal", amount:1}, {name:"Stick", amount:1}]},
-  "Furnace": { yield:1, ingredients:[{name:"Cobblestone", amount:8}]},
-  "Stone Slab": { yield:6, ingredients:[{name:"Stone", amount:3}]},
-  "Oak Door": { yield:3, ingredients:[{name:"Oak Plank", amount:6}]},
-  "Wood Stairs": { yield:4, ingredients:[{name:"Oak Plank", amount:6}]},
-  "Wood Fence": { yield:3, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}]},
-  "Wood Fence Gate": { yield:1, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}]},
-  "Wood Slab": { yield:6, ingredients:[{name:"Oak Plank", amount:3}]}
+  "Oak Plank": { yield:4, ingredients:[{name:"Oak Log", amount:1}], note:"1 log -> 4 planks" },
+  "Stick": { yield:4, ingredients:[{name:"Oak Plank", amount:2}], note:"2 planks -> 4 sticks"},
+  "Crafting Table": { yield:1, ingredients:[{name:"Oak Plank", amount:4}], note:"4 planks -> 1 table"},
+  "Chest": { yield:1, ingredients:[{name:"Oak Plank", amount:8}], note:"8 planks -> 1 chest"},
+  "Glass": { yield:1, ingredients:[{name:"Sand", amount:1}], note:"smelt sand -> glass"},
+  "Glass Pane": { yield:16, ingredients:[{name:"Glass", amount:6}], note:"6 glass -> 16 panes"},
+  "Stone": { yield:1, ingredients:[{name:"Cobblestone", amount:1}], note:"smelt cobblestone -> stone"},
+  "Stone Bricks": { yield:4, ingredients:[{name:"Stone", amount:4}], note:"4 stone -> 4 stone bricks"},
+  "Torch": { yield:4, ingredients:[{name:"Coal", amount:1}, {name:"Stick", amount:1}], note:"1 coal + 1 stick -> 4 torches"},
+  "Furnace": { yield:1, ingredients:[{name:"Cobblestone", amount:8}], note:"8 cobble -> furnace"},
+  "Stone Slab": { yield:6, ingredients:[{name:"Stone", amount:3}], note:"3 stone -> 6 slabs"},
+  "Oak Door": { yield:3, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 3 doors"},
+  "Wood Stairs": { yield:4, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 4 stairs"},
+  "Wood Fence": { yield:3, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 3 fences"},
+  "Wood Fence Gate": { yield:1, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 1 gate"},
+  "Wood Slab": { yield:6, ingredients:[{name:"Oak Plank", amount:3}], note:"3 planks -> 6 slabs"} // ✅ New recipe
 };
 
 let recipes = JSON.parse(localStorage.getItem("craft_recipes_v1") || "null") || presetRecipes;
@@ -152,23 +188,18 @@ function renderRecipes() {
     const r = recipes[key];
     const div = document.createElement("div");
     div.className = "recipe-row";
-    
-    const text = document.createElement("div");
-    text.className = "recipe-text";
     const ing = r.ingredients.map(i=>`${i.amount} × ${i.name}`).join(", ");
-    text.innerHTML = `<strong>${key}</strong> — yield: ${r.yield} — ingredients: ${ing}`;
-    
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", ()=>{
+    div.innerHTML = `<div><strong>${key}</strong> — yield: ${r.yield} — ingredients: ${ing}</div>`;
+    const btn = document.createElement("button");
+    btn.className = "delete-btn";
+    btn.textContent = "Delete";
+    btn.addEventListener("click", ()=>{
       delete recipes[key];
       saveRecipes();
       updateItemSelect();
       renderRecipes();
     });
-
-    div.appendChild(text);
-    div.appendChild(delBtn);
+    div.appendChild(btn);
     node.appendChild(div);
   });
 }
@@ -214,6 +245,7 @@ document.getElementById("calcBtn").addEventListener("click", ()=>{
 
 updateItemSelect();
 renderRecipes();
+document.getElementById("itemSelect").selectedIndex=0;
 </script>
 </body>
 </html>
