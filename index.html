@@ -21,7 +21,7 @@
     min-height:100vh;
   }
   .container{max-width:980px;margin:0 auto;}
-  header{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:20px;justify-content:space-between;}
   h1{margin:0;font-size:20px;}
   .card{
     background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
@@ -52,7 +52,7 @@
   .rightpanel{display:flex;flex-direction:column;gap:12px}
   .textarea{min-height:120px;resize:vertical}
   .code{background:rgba(255,255,255,0.02);padding:8px;border-radius:6px;font-family:monospace;font-size:13px;white-space:pre-wrap}
-  .github-btn img{width:28px;height:28px;}
+  .github-btn img{width:28px;height:28px;filter:invert(1);}
   .github-btn:hover img{transform:scale(1.1);transition:0.2s;}
   @media (max-width:900px){ .grid{grid-template-columns:1fr; } }
 </style>
@@ -60,11 +60,17 @@
 <body>
 <div class="container">
   <header>
-    <div class="card" style="display:inline-block;padding:10px 12px;">🚀</div>
-    <div>
-      <h1>Crafting Raw Material Calculator</h1>
-      <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="card" style="display:inline-block;padding:10px 12px;">🚀</div>
+      <div>
+        <h1>Crafting Raw Material Calculator</h1>
+        <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
+      </div>
     </div>
+    <!-- GitHub Icon Button -->
+    <a class="github-btn" href="https://github.com/RedClaws1800/MinecraftTools" target="_blank">
+      <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/github.svg" alt="GitHub">
+    </a>
   </header>
 
   <div class="grid">
