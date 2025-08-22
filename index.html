@@ -64,7 +64,7 @@
     <div class="card" style="display:inline-block;padding:10px 12px;">🚀</div>
     <div>
       <h1>Crafting Raw Material Calculator</h1>
-      <div class="muted">Tell it how many blocks/items you want and it will expand recipes into raw materials.</div>
+      <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
     </div>
     <a href="https://redclaws1800.github.io/MinecraftTools/" target="_blank" class="github-btn" style="margin-left:auto;">
       <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
@@ -98,7 +98,7 @@
         <h3 style="margin-top:0">Add / Update / Delete Custom Recipe</h3>
         <div class="muted small" style="margin-bottom:8px">
           Enter Name, Yield, and Ingredients separately.<br>
-          Ingredients format: <em>amount name</em>, separated by commas. <br>
+          <strong>Ingredients format:</strong> amount followed by item name, separated by commas.<br>
           Example: <span class="chip">2 Oak Plank</span>, <span class="chip">1 Stick</span>
         </div>
 
@@ -136,7 +136,7 @@
       <div class="card">
         <h3 style="margin-top:0">Raw Materials Needed</h3>
         <div id="rawList" class="raw-list muted">No calculation yet.</div>
-        <div style="margin-top:10px" class="muted">Any ingredient without a recipe is treated as <strong>raw</strong>.</div>
+        <div style="margin-top:10px" class="muted">Any ingredient without a recipe is treated as <strong>raw</strong> and will appear directly in this list.</div>
       </div>
 
       <div class="card">
@@ -147,14 +147,16 @@
       <div class="card">
         <h3 style="margin-top:0">Notes</h3>
         <ul class="muted small">
-          <li>Yields and recipes are examples inspired by Minecraft. Adjust as needed.</li>
-          <li>Fractional crafts are rounded up (can't craft part of a recipe).</li>
+          <li>Recipes and yields are inspired by Minecraft but can be freely adjusted or extended.</li>
+          <li>When crafting, fractional crafts are rounded up since you cannot craft partial units.</li>
+          <li>You can export your current recipes to a JSON file and re-import them later for continuity.</li>
+          <li>Loading the example set will overwrite your current recipes with the built-in defaults.</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <div class="footer">Made for quick crafting math. Save and open locally; everything runs in your browser.</div>
+  <div class="footer">Made for quick crafting math and planning. Save and open locally; everything runs in your browser without server connections.</div>
 </div>
 
 <script>
@@ -162,7 +164,18 @@ const presetRecipes = {
   "Oak Plank": { yield:4, ingredients:[{name:"Oak Log", amount:1}], note:"1 log -> 4 planks" },
   "Stick": { yield:4, ingredients:[{name:"Oak Plank", amount:2}], note:"2 planks -> 4 sticks"},
   "Crafting Table": { yield:1, ingredients:[{name:"Oak Plank", amount:4}], note:"4 planks -> 1 table"},
-  "Chest": { yield:1, ingredients:[{name:"Oak Plank", amount:8}], note:"8 planks -> 1 chest"}
+  "Chest": { yield:1, ingredients:[{name:"Oak Plank", amount:8}], note:"8 planks -> 1 chest"},
+  "Glass": { yield:1, ingredients:[{name:"Sand", amount:1}], note:"smelt sand -> glass"},
+  "Glass Pane": { yield:16, ingredients:[{name:"Glass", amount:6}], note:"6 glass -> 16 panes"},
+  "Stone": { yield:1, ingredients:[{name:"Cobblestone", amount:1}], note:"smelt cobblestone -> stone"},
+  "Stone Bricks": { yield:4, ingredients:[{name:"Stone", amount:4}], note:"4 stone -> 4 stone bricks"},
+  "Torch": { yield:4, ingredients:[{name:"Coal", amount:1}, {name:"Stick", amount:1}], note:"1 coal + 1 stick -> 4 torches"},
+  "Furnace": { yield:1, ingredients:[{name:"Cobblestone", amount:8}], note:"8 cobble -> furnace"},
+  "Stone Slab": { yield:6, ingredients:[{name:"Stone", amount:3}], note:"3 stone -> 6 slabs"},
+  "Oak Door": { yield:3, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 3 doors"},
+  "Wood Stairs": { yield:4, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 4 stairs"},
+  "Wood Fence": { yield:3, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 3 fences"},
+  "Wood Fence Gate": { yield:1, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 1 gate"}
 };
 
 let recipes = JSON.parse(localStorage.getItem("craft_recipes_v1") || "null") || presetRecipes;
@@ -207,22 +220,33 @@ function renderRecipes() {
 
 // Calculation functions
 function calculateRequirements(targetName, targetQty) {
-  const need = {}; const pending = {}; pending[targetName] = (pending[targetName] || 0) + targetQty;
+  const need = {}; 
+  const pending = {}; 
+  pending[targetName] = (pending[targetName] || 0) + targetQty;
   while(true){
     const keys = Object.keys(pending);
     if(keys.length===0) break;
     let item=null;
     for(let k of keys){ if(recipes[k]) {item=k; break;} }
-    if(!item){ keys.forEach(k=>{ need[k]=(need[k]||0)+pending[k]; delete pending[k];}); break;}
-    const amount = pending[item]; delete pending[item];
-    const r = recipes[item]; const ops=Math.ceil(amount/r.yield);
+    if(!item){ 
+      keys.forEach(k=>{ 
+        need[k]=(need[k]||0)+pending[k]; 
+        delete pending[k];
+      }); 
+      break;
+    }
+    const amount = pending[item]; 
+    delete pending[item];
+    const r = recipes[item]; 
+    const ops=Math.ceil(amount/r.yield);
     r.ingredients.forEach(i=>{ pending[i.name]=(pending[i.name]||0)+i.amount*ops; });
   }
   return Object.keys(need).sort().map(k=>({name:k, amount:need[k]}));
 }
 
 function buildBreakdown(targetName, targetQty){
-  const pending = {}; pending[targetName]=(pending[targetName]||0)+targetQty;
+  const pending = {}; 
+  pending[targetName]=(pending[targetName]||0)+targetQty;
   const craftOps={};
   while(true){
     const keys=Object.keys(pending);
@@ -230,8 +254,10 @@ function buildBreakdown(targetName, targetQty){
     let item=null;
     for(let k of keys){ if(recipes[k]){item=k; break;} }
     if(!item) break;
-    const amount=pending[item]; delete pending[item];
-    const r=recipes[item]; const ops=Math.ceil(amount/r.yield);
+    const amount=pending[item]; 
+    delete pending[item];
+    const r=recipes[item]; 
+    const ops=Math.ceil(amount/r.yield);
     craftOps[item]=(craftOps[item]||0)+ops;
     r.ingredients.forEach(i=>{pending[i.name]=(pending[i.name]||0)+i.amount*ops;});
   }
@@ -260,10 +286,10 @@ document.getElementById("calcBtn").addEventListener("click", ()=>{
   const breakdown=buildBreakdown(item,qty);
   document.getElementById("resultsArea").innerHTML=`<div class="small muted">Requested: <strong>${qty} × ${item}</strong></div>
   <div style="margin-top:8px">
-    <div class="muted small">Final raw materials:</div>
+    <div class="muted small">Final raw materials required:</div>
     <div class="code" style="margin-top:6px">${raw.map(r=>`${r.amount} × ${r.name}`).join("\n")}</div>
   </div>
-  <div style="margin-top:10px" class="muted small">Crafting operations (rounded up):</div>
+  <div style="margin-top:10px" class="muted small">Crafting operations (rounded up where needed):</div>
   <div class="code" style="margin-top:6px">${breakdown.join("\n")}</div>`;
 });
 
