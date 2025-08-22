@@ -53,6 +53,8 @@
   .rightpanel{display:flex;flex-direction:column;gap:12px}
   .textarea{min-height:120px;resize:vertical}
   .code{background:rgba(255,255,255,0.02);padding:8px;border-radius:6px;font-family:monospace;font-size:13px;white-space:pre-wrap}
+  .github-btn img{width:28px;height:28px;}
+  .github-btn:hover img{transform:scale(1.1);transition:0.2s;}
   @media (max-width:900px){ .grid{grid-template-columns:1fr; } }
 </style>
 </head>
@@ -64,6 +66,9 @@
       <h1>Crafting Raw Material Calculator</h1>
       <div class="muted">Tell it how many blocks/items you want and it will expand recipes into raw materials.</div>
     </div>
+    <a href="https://redclaws1800.github.io/MinecraftTools/" target="_blank" class="github-btn" style="margin-left:auto;">
+      <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
+    </a>
   </header>
 
   <div class="grid">
@@ -182,7 +187,8 @@ function renderRecipes() {
     div.className = "recipe-row";
     const ing = r.ingredients.map(i=>`${i.amount} × ${i.name}`).join(", ");
     div.innerHTML = `<strong>${key}</strong> — yield: ${r.yield} — ingredients: ${ing} ${r.note?` <span class="muted">(${r.note})</span>`:""}`;
-    // add delete button
+    
+    // Delete button
     const delBtn = document.createElement("button");
     delBtn.textContent = "Delete";
     delBtn.style.marginLeft="auto";
@@ -199,6 +205,7 @@ function renderRecipes() {
   });
 }
 
+// Calculation functions
 function calculateRequirements(targetName, targetQty) {
   const need = {}; const pending = {}; pending[targetName] = (pending[targetName] || 0) + targetQty;
   while(true){
@@ -237,7 +244,7 @@ function buildBreakdown(targetName, targetQty){
   });
 }
 
-// calculate button
+// Event listeners
 document.getElementById("calcBtn").addEventListener("click", ()=>{
   const item=document.getElementById("itemSelect").value;
   const qty=Math.max(1,Number(document.getElementById("qty").value)||1);
@@ -260,7 +267,7 @@ document.getElementById("calcBtn").addEventListener("click", ()=>{
   <div class="code" style="margin-top:6px">${breakdown.join("\n")}</div>`;
 });
 
-// add/update recipe
+// Add/Update recipe
 document.getElementById("addCustom").addEventListener("click",()=>{
   const name=document.getElementById("customName").value.trim();
   const yieldCount=Math.max(1,Number(document.getElementById("customYield").value)||1);
@@ -283,7 +290,7 @@ document.getElementById("addCustom").addEventListener("click",()=>{
   }catch(e){ alert(e.message); }
 });
 
-// delete recipe from form
+// Delete recipe
 document.getElementById("deleteCustom").addEventListener("click", ()=>{
   const name=document.getElementById("customName").value.trim();
   if(!name){ alert("Enter the name of the recipe to delete."); return; }
@@ -299,7 +306,7 @@ document.getElementById("deleteCustom").addEventListener("click", ()=>{
   document.getElementById("customIngredients").value="";
 });
 
-// import/export and examples
+// Import/Export/Example
 document.getElementById("exportBtn").addEventListener("click",()=>{
   const json=JSON.stringify(recipes,null,2);
   const blob=new Blob([json],{type:"application/json"});
@@ -330,7 +337,7 @@ document.getElementById("useExample").addEventListener("click",()=>{
   renderRecipes();
 });
 
-// initialize
+// Initialize
 updateItemSelect();
 renderRecipes();
 document.getElementById("itemSelect").selectedIndex=0;
