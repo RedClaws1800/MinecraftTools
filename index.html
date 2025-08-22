@@ -47,7 +47,6 @@
   .recipe-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
   .chip{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;font-size:13px}
   .raw-list{display:flex;flex-direction:column;gap:6px}
-  .actions{display:flex;gap:8px;flex-wrap:wrap}
   .footer{margin-top:14px;color:var(--muted);font-size:13px}
   .leftpanel{display:flex;flex-direction:column;gap:12px}
   .rightpanel{display:flex;flex-direction:column;gap:12px}
@@ -66,9 +65,6 @@
       <h1>Crafting Raw Material Calculator</h1>
       <div class="muted">Select an item, enter quantity, and calculate how many raw materials you need. Recipes expand recursively.</div>
     </div>
-    <a href="https://redclaws1800.github.io/MinecraftTools/" target="_blank" class="github-btn" style="margin-left:auto;">
-      <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
-    </a>
   </header>
 
   <div class="grid">
@@ -136,27 +132,15 @@
       <div class="card">
         <h3 style="margin-top:0">Raw Materials Needed</h3>
         <div id="rawList" class="raw-list muted">No calculation yet.</div>
-        <div style="margin-top:10px" class="muted">Any ingredient without a recipe is treated as <strong>raw</strong> and will appear directly in this list.</div>
+        <div style="margin-top:10px" class="muted">Any ingredient without a recipe is treated as <strong>raw</strong>.</div>
       </div>
 
       <div class="card">
         <h3 style="margin-top:0">Recipes (editable)</h3>
         <div id="recipeList" class="small muted"></div>
       </div>
-
-      <div class="card">
-        <h3 style="margin-top:0">Notes</h3>
-        <ul class="muted small">
-          <li>Recipes and yields are inspired by Minecraft but can be freely adjusted or extended.</li>
-          <li>When crafting, fractional crafts are rounded up since you cannot craft partial units.</li>
-          <li>You can export your current recipes to a JSON file and re-import them later for continuity.</li>
-          <li>Loading the example set will overwrite your current recipes with the built-in defaults.</li>
-        </ul>
-      </div>
     </div>
   </div>
-
-  <div class="footer">Made for quick crafting math and planning. Save and open locally; everything runs in your browser without server connections.</div>
 </div>
 
 <script>
@@ -175,7 +159,8 @@ const presetRecipes = {
   "Oak Door": { yield:3, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 3 doors"},
   "Wood Stairs": { yield:4, ingredients:[{name:"Oak Plank", amount:6}], note:"6 planks -> 4 stairs"},
   "Wood Fence": { yield:3, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 3 fences"},
-  "Wood Fence Gate": { yield:1, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 1 gate"}
+  "Wood Fence Gate": { yield:1, ingredients:[{name:"Oak Plank", amount:4}, {name:"Stick", amount:2}], note:"4 planks + 2 sticks -> 1 gate"},
+  "Wood Slab": { yield:6, ingredients:[{name:"Oak Plank", amount:3}], note:"3 planks -> 6 slabs"} // ✅ New recipe
 };
 
 let recipes = JSON.parse(localStorage.getItem("craft_recipes_v1") || "null") || presetRecipes;
@@ -199,26 +184,11 @@ function renderRecipes() {
     const div = document.createElement("div");
     div.className = "recipe-row";
     const ing = r.ingredients.map(i=>`${i.amount} × ${i.name}`).join(", ");
-    div.innerHTML = `<strong>${key}</strong> — yield: ${r.yield} — ingredients: ${ing} ${r.note?` <span class="muted">(${r.note})</span>`:""}`;
-    
-    // Delete button
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-    delBtn.style.marginLeft="auto";
-    delBtn.addEventListener("click",()=>{
-      if(confirm(`Delete recipe "${key}"?`)){
-        delete recipes[key];
-        localStorage.setItem("craft_recipes_v1", JSON.stringify(recipes));
-        updateItemSelect();
-        renderRecipes();
-      }
-    });
-    div.appendChild(delBtn);
+    div.innerHTML = `<strong>${key}</strong> — yield: ${r.yield} — ingredients: ${ing}`;
     node.appendChild(div);
   });
 }
 
-// Calculation functions
 function calculateRequirements(targetName, targetQty) {
   const need = {}; 
   const pending = {}; 
@@ -244,33 +214,6 @@ function calculateRequirements(targetName, targetQty) {
   return Object.keys(need).sort().map(k=>({name:k, amount:need[k]}));
 }
 
-function buildBreakdown(targetName, targetQty){
-  const pending = {}; 
-  pending[targetName]=(pending[targetName]||0)+targetQty;
-  const craftOps={};
-  while(true){
-    const keys=Object.keys(pending);
-    if(keys.length===0) break;
-    let item=null;
-    for(let k of keys){ if(recipes[k]){item=k; break;} }
-    if(!item) break;
-    const amount=pending[item]; 
-    delete pending[item];
-    const r=recipes[item]; 
-    const ops=Math.ceil(amount/r.yield);
-    craftOps[item]=(craftOps[item]||0)+ops;
-    r.ingredients.forEach(i=>{pending[i.name]=(pending[i.name]||0)+i.amount*ops;});
-  }
-  const keys=Object.keys(craftOps).sort();
-  if(keys.length===0) return ["No crafting operations (target treated as raw)."];
-  return keys.map(k=>{
-    const r=recipes[k];
-    const ing=r.ingredients.map(i=>`${i.amount} × ${i.name}`).join(", ");
-    return `${craftOps[k]} × craft ${k} (each craft produces ${r.yield}) — ingredients per craft: ${ing}`;
-  });
-}
-
-// Event listeners
 document.getElementById("calcBtn").addEventListener("click", ()=>{
   const item=document.getElementById("itemSelect").value;
   const qty=Math.max(1,Number(document.getElementById("qty").value)||1);
@@ -280,95 +223,14 @@ document.getElementById("calcBtn").addEventListener("click", ()=>{
   if(raw.length===0) rawNode.innerHTML='<div class="muted">No raw materials required.</div>';
   else raw.forEach(r=>{
     const div=document.createElement("div");
-    div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${r.name}</strong> <span class="muted">x ${r.amount}</span></div></div>`;
+    div.innerHTML=`<strong>${r.name}</strong> × ${r.amount}`;
     rawNode.appendChild(div);
   });
-  const breakdown=buildBreakdown(item,qty);
-  document.getElementById("resultsArea").innerHTML=`<div class="small muted">Requested: <strong>${qty} × ${item}</strong></div>
-  <div style="margin-top:8px">
-    <div class="muted small">Final raw materials required:</div>
-    <div class="code" style="margin-top:6px">${raw.map(r=>`${r.amount} × ${r.name}`).join("\n")}</div>
-  </div>
-  <div style="margin-top:10px" class="muted small">Crafting operations (rounded up where needed):</div>
-  <div class="code" style="margin-top:6px">${breakdown.join("\n")}</div>`;
 });
 
-// Add/Update recipe
-document.getElementById("addCustom").addEventListener("click",()=>{
-  const name=document.getElementById("customName").value.trim();
-  const yieldCount=Math.max(1,Number(document.getElementById("customYield").value)||1);
-  const ingRaw=document.getElementById("customIngredients").value.trim();
-  if(!name||!ingRaw){ alert("Enter name and ingredients."); return; }
-  try{
-    const ingredients=ingRaw.split(",").map(s=>s.trim()).map(str=>{
-      const m=str.match(/^(\d+)\s+(.+)$/);
-      if(!m) throw new Error(`Invalid format: "${str}"`);
-      return {amount:parseInt(m[1],10), name:m[2].trim()};
-    });
-    recipes[name]={yield:yieldCount, ingredients:ingredients, note:"(custom)"};
-    localStorage.setItem("craft_recipes_v1", JSON.stringify(recipes));
-    updateItemSelect();
-    renderRecipes();
-    alert(`Recipe added/updated for "${name}".`);
-    document.getElementById("customName").value="";
-    document.getElementById("customYield").value=1;
-    document.getElementById("customIngredients").value="";
-  }catch(e){ alert(e.message); }
-});
-
-// Delete recipe
-document.getElementById("deleteCustom").addEventListener("click", ()=>{
-  const name=document.getElementById("customName").value.trim();
-  if(!name){ alert("Enter the name of the recipe to delete."); return; }
-  if(!recipes[name]){ alert(`No recipe found for "${name}".`); return; }
-  if(!confirm(`Are you sure you want to delete the recipe for "${name}"?`)) return;
-  delete recipes[name];
-  localStorage.setItem("craft_recipes_v1", JSON.stringify(recipes));
-  updateItemSelect();
-  renderRecipes();
-  alert(`Recipe "${name}" deleted.`);
-  document.getElementById("customName").value="";
-  document.getElementById("customYield").value=1;
-  document.getElementById("customIngredients").value="";
-});
-
-// Import/Export/Example
-document.getElementById("exportBtn").addEventListener("click",()=>{
-  const json=JSON.stringify(recipes,null,2);
-  const blob=new Blob([json],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download="recipes.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-});
-
-document.getElementById("importBtn").addEventListener("click",()=>{
-  const area=document.getElementById("importArea");
-  if(area.style.display==="none"){ area.style.display="block"; area.focus(); return; }
-  try{
-    const parsed=JSON.parse(area.value);
-    if(typeof parsed!=="object"||parsed===null) throw new Error("Invalid JSON");
-    recipes=parsed;
-    localStorage.setItem("craft_recipes_v1", JSON.stringify(recipes));
-    updateItemSelect();
-    renderRecipes();
-    alert("Recipes imported."); area.style.display="none"; area.value="";
-  }catch(e){ alert("Failed to import JSON: "+e.message); }
-});
-
-document.getElementById("useExample").addEventListener("click",()=>{
-  if(!confirm("Replace current recipes with built-in example set?")) return;
-  recipes=JSON.parse(JSON.stringify(presetRecipes));
-  localStorage.setItem("craft_recipes_v1", JSON.stringify(recipes));
-  updateItemSelect();
-  renderRecipes();
-});
-
-// Initialize
 updateItemSelect();
 renderRecipes();
 document.getElementById("itemSelect").selectedIndex=0;
-document.getElementById("calcBtn").click();
-document.getElementById("qty").addEventListener("keydown",(e)=>{if(e.key==="Enter"){e.preventDefault();document.getElementById("calcBtn").click();}});
 </script>
 </body>
 </html>
