@@ -23,7 +23,7 @@
 
 - **Saving**
 - **Better UI**
-- **Color change**
+- **Color Change**
 - **Other Functions**
 
 ---
